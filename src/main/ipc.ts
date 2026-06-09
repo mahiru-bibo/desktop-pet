@@ -1,0 +1,127 @@
+// IPC handler registration
+// All IPC channels are defined and handled here
+
+import { ipcMain, BrowserWindow } from 'electron';
+import { store } from './store';
+import { createProvider } from '../providers/factory';
+import type { ChatMessage } from './store';
+
+let petWindow: BrowserWindow | null = null;
+let chatWindow: BrowserWindow | null = null;
+
+export function setPetWindow(win: BrowserWindow) {
+  petWindow = win;
+}
+
+export function setChatWindow(win: BrowserWindow) {
+  chatWindow = win;
+}
+
+export function registerIpcHandlers() {
+  // ── Pet window movement ──
+  ipcMain.on('pet:move-window', (_event, { dx, dy }: { dx: number; dy: number }) => {
+    if (!petWindow) return;
+    const [x, y] = petWindow.getPosition();
+    petWindow.setPosition(x + dx, y + dy);
+  });
+
+  ipcMain.on('pet:save-position', () => {
+    if (!petWindow) return;
+    const [x, y] = petWindow.getPosition();
+    store.set('petPosition', { x, y });
+  });
+
+  // ── Open chat window ──
+  ipcMain.on('pet:open-chat', () => {
+    if (chatWindow) {
+      if (chatWindow.isMinimized()) chatWindow.restore();
+      chatWindow.show();
+      chatWindow.focus();
+    }
+  });
+
+  // ── Settings (pet) ──
+  ipcMain.handle('settings:get-pet', () => {
+    return {
+      characterId: store.get('characterId'),
+      pixelScale: store.get('pixelScale'),
+      bubbleDuration: store.get('bubbleDuration'),
+    };
+  });
+
+  // ── Settings (chat) ──
+  ipcMain.handle('settings:get-chat', () => {
+    const provider = store.get('provider');
+    return {
+      characterId: store.get('characterId'),
+      characterName: ['女仆', '剑士', '魔法师', '猫娘'][store.get('characterId')] || '女仆',
+      provider: provider.provider,
+      model: provider.model,
+    };
+  });
+
+  // ── Chat messaging ──
+  ipcMain.handle('chat:send-message', async (_event, text: string) => {
+    try {
+      const providerConfig = store.get('provider');
+      const personalityPrompt = store.get('personalityPrompt');
+      const history = store.get('chatHistory');
+
+      // Build message array
+      const messages = [
+        { role: 'system' as const, content: personalityPrompt },
+        ...history.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: text },
+      ];
+
+      // Save user message
+      const userMsg: ChatMessage = {
+        role: 'user',
+        content: text,
+        timestamp: Date.now(),
+      };
+      history.push(userMsg);
+
+      // Call LLM
+      const provider = createProvider(providerConfig);
+      const response = await provider.sendMessage(messages, providerConfig);
+
+      // Save assistant response
+      const assistantMsg: ChatMessage = {
+        role: 'assistant',
+        content: response,
+        timestamp: Date.now(),
+      };
+      history.push(assistantMsg);
+      store.set('chatHistory', history);
+
+      // Send response to chat window
+      if (chatWindow && !chatWindow.isDestroyed()) {
+        chatWindow.webContents.send('chat:response', assistantMsg);
+      }
+
+      // Send speech bubble to pet window
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:speak', response);
+      }
+
+      return assistantMsg;
+    } catch (error: any) {
+      const errorMsg: ChatMessage = {
+        role: 'assistant',
+        content: `(错误: ${error.message || '无法连接到模型'})`,
+        timestamp: Date.now(),
+      };
+      return errorMsg;
+    }
+  });
+
+  // ── Chat history ──
+  ipcMain.handle('chat:get-history', () => {
+    return store.get('chatHistory');
+  });
+
+  ipcMain.handle('chat:clear-history', () => {
+    store.set('chatHistory', []);
+  });
+}

@@ -1,0 +1,41 @@
+{
+  "name": "desktop-pet",
+  "version": "1.0.0",
+  "description": "Pixel anime desktop pet with chat capabilities",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "cp -r src/renderer/pet/*.html src/renderer/pet/*.css dist/renderer/pet/ 2>/dev/null; cp -r src/renderer/chat/*.html src/renderer/chat/*.css dist/renderer/chat/ 2>/dev/null; echo 'Assets copied'",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.0.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "build": {
+    "appId": "com.desktop-pet.app",
+    "productName": "Desktop Pet",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": ["portable", "nsis"],
+      "icon": "assets/tray-icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
