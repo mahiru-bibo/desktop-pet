@@ -30,7 +30,7 @@ function parseMap(raw) {
 }
 
 var CHARACTERS = [
-  { id: 0, name: '椎名', emoji: '🌸', imagePath: 'assets/characters/shiina.png', displayWidth: 300 },
+  { id: 0, name: '椎名真昼', emoji: '🌸', imagePath: 'assets/characters/shiina.png', displayWidth: 300 },
 ];
 
 // CommonJS compat for Node.js / Electron main process

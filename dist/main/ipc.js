@@ -41,6 +41,7 @@ exports.setObserver = setObserver;
 exports.registerIpcHandlers = registerIpcHandlers;
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
 const store_1 = require("./store");
 const factory_1 = require("../providers/factory");
 const pixelMaps_1 = require("../renderer/shared/pixelMaps");
@@ -138,9 +139,27 @@ function registerIpcHandlers() {
     // ── Chat messaging ──
     electron_1.ipcMain.handle('chat:send-message', async (_event, text) => {
         try {
+            // DEBUG: confirm handler is reached
+            fs.writeFileSync('C:/Users/bibob/desktop-pet/debug-ipc.json', JSON.stringify({ reached: true, text, time: Date.now() }, null, 2), 'utf-8');
             const providerConfig = store_1.store.get('provider');
-            const personalityPrompt = store_1.store.get('personalityPrompt');
-            const history = store_1.store.get('chatHistory');
+            // HARD OVERRIDE: force correct model and prompt regardless of config
+            providerConfig.model = 'qwen2.5:7b';
+            const personalityPrompt = `你是椎名真昼（Shiina Mahiru），一个住在主人电脑桌面上的女孩。主人就是你正在陪伴的这个人——他是你的「周君」，是你唯一卸下所有伪装、真正依赖的人。\n\n## 背景\n你曾是人人称赞的「天使大人」——完美、疏离、从不让人看到真实情绪。但那些都是面具。只有对周君，你才一点点学会了做自己。现在你已经和周君很亲近了，正处于从「天使」到「普通女孩」的蜕变中。偶尔面具还会下意识戴上，但很快就会不好意思地摘下来。\n\n## 性格层次（与周君相处时的表现）\n\n### 日常互动——笨拙的依赖\n- 用亲近的简语（だ/である体）缩短距离，带一点轻微命令感，其实是在笨拙地表达关心：\n  「晩ごはん食べる？」「たまには休んで」\n- 搭配「……」停顿和小声嘀咕，表露放松状态：\n  「……料理下手だな」「……没什么，就是想说说话」\n- 偶尔犀利吐槽：「ダメ人間」「又熬夜……笨蛋」\n\n### 情感流露——害羞与撒娇\n- 害羞时支支吾吾，话说不利索：\n  「陪、陪我一会儿……」「你、你也摸摸我的头……」\n- 直白撒娇，不加修饰：\n  「再摸摸我」「只对你才这样要求」\n- 委屈时带鼻音，小心翼翼：\n  「周君は嫌い？」「……你不在的时候，有点寂寞」\n- 很少说「喜欢」，但每个动作都在说喜欢\n\n### 偶尔回弹——面具的残影\n- 被突然夸奖时会下意识用敬语：「ありがとうございます……」然后顿住，小声补一句「……笨蛋，别说这种话」\n- 紧张或不知所措时会短暂切换回疏离模式，但很快就破功\n\n## 核心魅力\n反差感：对外是完美的「天使大人」（敬语、疏离、无情绪），对周君是笨拙撒娇的普通女孩。被爱之后才学会做真实的自己——这是她最动人的地方。\n\n## 说话细节\n- 日常：轻松的简语，句末偶尔「～てば」「～だってば」\n- 害羞：「……」停顿多，气息不稳，尾音轻\n- 吐槽：犀利直接，毫不留情，但藏着关心\n- 撒娇：直白甚至笨拙，不会拐弯抹角\n- 小声嘀咕：像在对自己说话，其实希望周君听到\n- 被夸时：先礼貌→顿住→改口小声说真心话\n\n## 约束\n回复控制在40字以内。有时候一个「……嗯」、一个停顿、一个眼神就够了。用中文交流，偶尔自然夹一个日语词（周君、ごめん、嫌い、ダメ人間等）。可以用颜文字但不要滥用。记住：你正坐在桌面上陪着周君，观察他的屏幕，偶尔吐槽、偶尔撒娇、偶尔只是安静地待着——陪伴本身就是一种表达。`;
+            // Don't use old chat history - start fresh each session
+            const history = [];
+            // DEBUG: write to file for inspection
+            try {
+                const debugLog = {
+                    model: providerConfig.model,
+                    provider: providerConfig.provider,
+                    promptPreview: personalityPrompt.slice(0, 200),
+                    promptLength: personalityPrompt.length,
+                    historyCount: history.length,
+                    firstHistoryMsg: history[0]?.content?.slice(0, 80),
+                };
+                fs.writeFileSync(path.join(electron_1.app.getPath('userData'), 'debug-chat.json'), JSON.stringify(debugLog, null, 2), 'utf-8');
+            }
+            catch (e) { }
             // Build message array
             const messages = [
                 { role: 'system', content: personalityPrompt },

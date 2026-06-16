@@ -45,7 +45,7 @@ export interface CharacterDef {
 }
 
 export const CHARACTERS: CharacterDef[] = [
-  { id: 0, name: '椎名', emoji: '🌸', imagePath: 'assets/characters/shiina.png', displayWidth: 300 },
+  { id: 0, name: '椎名真昼', emoji: '🌸', imagePath: 'assets/characters/shiina.png', displayWidth: 300 },
 ];
 
 // ── Animation variant maps ──
