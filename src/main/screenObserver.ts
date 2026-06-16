@@ -28,6 +28,16 @@ export class ScreenObserver {
   toggle(): boolean {
     this.enabled = !this.enabled;
     if (this.enabled) {
+      // Check API key before starting (ollama doesn't need one)
+      const providerConfig = store.get('provider');
+      if (this.needsApiKey(providerConfig)) {
+        console.log('[Observer] Cannot start — no API key configured');
+        this.enabled = false;
+        if (this.petWindow && !this.petWindow.isDestroyed()) {
+          this.petWindow.webContents.send('pet:speak', '请先配置 API Key 再开启屏幕观察哦～(◕‿◕)');
+        }
+        return false;
+      }
       console.log('[Observer] Started — first observation in', FIRST_OBSERVE_DELAY / 1000, 's');
       this.scheduleNext(FIRST_OBSERVE_DELAY);
     } else {
@@ -72,10 +82,13 @@ export class ScreenObserver {
       }
 
       const providerConfig = store.get('provider');
-      if (!providerConfig.apiKey) {
-        // No API key configured — quietly skip
-        console.log('[Observer] No API key configured, skipping observation');
-        this.scheduleNext(this.interval);
+      if (this.needsApiKey(providerConfig)) {
+        // No API key configured — stop observer and notify user
+        console.log('[Observer] No API key configured — stopping observer');
+        this.enabled = false;
+        if (this.petWindow && !this.petWindow.isDestroyed()) {
+          this.petWindow.webContents.send('pet:speak', '请先配置 API Key 再开启屏幕观察哦～(◕‿◕)');
+        }
         return;
       }
 
@@ -101,6 +114,11 @@ export class ScreenObserver {
         .slice(0, 80); // cap length
 
       if (cleanComment && !this.petWindow.isDestroyed()) {
+        // Show window if hidden so user can see the comment
+        if (!this.petWindow.isVisible()) {
+          console.log('[Observer] Pet window hidden, showing it for comment');
+          this.petWindow.show();
+        }
         this.petWindow.webContents.send('pet:speak', cleanComment);
         console.log('[Observer] Comment:', cleanComment);
       }
@@ -142,6 +160,11 @@ export class ScreenObserver {
       console.error('[Observer] Capture error:', error);
       return null;
     }
+  }
+
+  /** Check if the current provider requires an API key */
+  private needsApiKey(config: { provider: string; apiKey: string }): boolean {
+    return config.provider !== 'ollama' && !config.apiKey;
   }
 
   setInterval(ms: number) {
