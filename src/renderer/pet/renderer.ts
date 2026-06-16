@@ -4,8 +4,8 @@
 import { ColorGrid } from '../shared/pixelMaps';
 
 export interface FrameData {
-  /** The 32x32 color grid to draw */
-  grid: ColorGrid;
+  /** The 32x32 color grid to draw (undefined for image-based characters) */
+  grid?: ColorGrid;
   /** Horizontal pixel offset */
   offsetX: number;
   /** Vertical pixel offset */
@@ -19,6 +19,11 @@ export class CharacterRenderer {
   private gridSize: number;  // 32
   private bgColor: string;
   private bgColorAlt: string;
+
+  // Image character support
+  private image: HTMLImageElement | null = null;
+  private imageDisplayWidth: number = 200;
+  private isImageMode: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, pixelSize: number = 8) {
     this.canvas = canvas;
@@ -34,10 +39,24 @@ export class CharacterRenderer {
   }
 
   resize() {
+    if (this.isImageMode) {
+      this.resizeForImage();
+      return;
+    }
     const size = this.gridSize * this.pixelSize;
     this.canvas.width = size;
     this.canvas.height = size;
     this.ctx.imageSmoothingEnabled = false;
+  }
+
+  private resizeForImage() {
+    if (!this.image) return;
+    const aspect = this.image.height / this.image.width;
+    this.canvas.width = this.imageDisplayWidth;
+    this.canvas.height = Math.round(this.imageDisplayWidth * aspect);
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
+    this.canvas.style.imageRendering = 'auto';
   }
 
   /** Set the pixel scale factor and resize the canvas */
@@ -46,9 +65,59 @@ export class CharacterRenderer {
     this.resize();
   }
 
+  /** Load an image for image-based characters */
+  async loadImage(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.image = img;
+        this.isImageMode = true;
+        this.resizeForImage();
+        resolve();
+      };
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+      img.src = src;
+    });
+  }
+
+  /** Set target display width for image characters */
+  setImageDisplayWidth(w: number) {
+    this.imageDisplayWidth = w;
+    if (this.isImageMode) {
+      this.resizeForImage();
+    }
+  }
+
+  /** Check if currently in image rendering mode */
+  get isInImageMode(): boolean {
+    return this.isImageMode;
+  }
+
   /** Clear and draw background + character */
   draw(frame: FrameData) {
+    if (this.isImageMode && this.image) {
+      this.drawImageFrame(frame);
+      return;
+    }
+    this.drawPixelFrame(frame);
+  }
+
+  /** Draw image-based character with offset animation */
+  private drawImageFrame(frame: FrameData) {
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    ctx.save();
+    // Apply animation offsets
+    ctx.translate(frame.offsetX, frame.offsetY);
+    ctx.drawImage(this.image!, 0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
+  }
+
+  /** Draw pixel grid character (original logic) */
+  private drawPixelFrame(frame: FrameData) {
     const { grid, offsetX, offsetY } = frame;
+    if (!grid) return;
     const px = this.pixelSize;
     const ctx = this.ctx;
 
@@ -110,8 +179,8 @@ export class CharacterRenderer {
   /** Get canvas dimensions */
   getSize(): { width: number; height: number } {
     return {
-      width: this.gridSize * this.pixelSize,
-      height: this.gridSize * this.pixelSize,
+      width: this.canvas.width,
+      height: this.canvas.height,
     };
   }
 }

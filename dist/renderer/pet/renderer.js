@@ -1,4 +1,4 @@
-// Canvas pixel character renderer — plain JS
+// Canvas pixel character renderer — plain JS (image mode support)
 
 function CharacterRenderer(canvas, pixelSize) {
   pixelSize = pixelSize || 8;
@@ -8,18 +8,75 @@ function CharacterRenderer(canvas, pixelSize) {
   this.gridSize = 32;
   this.bgColor = '#16213e';
   this.bgColorAlt = '#1a1a3e';
+  // Image character support
+  this.image = null;
+  this.imageDisplayWidth = 200;
+  this.isImageMode = false;
   this.resize();
 }
 
 CharacterRenderer.prototype.resize = function() {
+  if (this.isImageMode && this.image) {
+    this._resizeForImage();
+    return;
+  }
   var size = this.gridSize * this.pixelSize;
   this.canvas.width = size;
   this.canvas.height = size;
   this.ctx.imageSmoothingEnabled = false;
 };
 
+CharacterRenderer.prototype._resizeForImage = function() {
+  if (!this.image) return;
+  var aspect = this.image.height / this.image.width;
+  this.canvas.width = this.imageDisplayWidth;
+  this.canvas.height = Math.round(this.imageDisplayWidth * aspect);
+  this.ctx.imageSmoothingEnabled = true;
+  this.ctx.imageSmoothingQuality = 'high';
+  // Apply CSS for sharp rendering during downscale
+  this.canvas.style.imageRendering = 'auto';
+};
+
+CharacterRenderer.prototype.loadImage = function(src) {
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() {
+      self.image = img;
+      self.isImageMode = true;
+      self._resizeForImage();
+      resolve();
+    };
+    img.onerror = function() { reject(new Error('Failed to load image: ' + src)); };
+    img.src = src;
+  });
+};
+
+CharacterRenderer.prototype.setImageDisplayWidth = function(w) {
+  this.imageDisplayWidth = w;
+  if (this.isImageMode) this._resizeForImage();
+};
+
 CharacterRenderer.prototype.draw = function(frame) {
+  if (this.isImageMode && this.image) {
+    this._drawImageFrame(frame);
+    return;
+  }
+  this._drawPixelFrame(frame);
+};
+
+CharacterRenderer.prototype._drawImageFrame = function(frame) {
+  var ctx = this.ctx;
+  ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  ctx.save();
+  ctx.translate(frame.offsetX || 0, frame.offsetY || 0);
+  ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+  ctx.restore();
+};
+
+CharacterRenderer.prototype._drawPixelFrame = function(frame) {
   var grid = frame.grid, px = this.pixelSize;
+  if (!grid) return;
   var ox = frame.offsetX || 0, oy = frame.offsetY || 0;
   var ctx = this.ctx, gs = this.gridSize;
   var bg = this.bgColor, bgAlt = this.bgColorAlt;
@@ -57,6 +114,5 @@ CharacterRenderer.prototype.draw = function(frame) {
 };
 
 CharacterRenderer.prototype.getSize = function() {
-  var size = this.gridSize * this.pixelSize;
-  return { width: size, height: size };
+  return { width: this.canvas.width, height: this.canvas.height };
 };

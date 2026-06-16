@@ -17,4 +17,6 @@ export interface ProviderConfig {
 export interface ChatProvider {
   name: string;
   sendMessage(messages: Message[], config: ProviderConfig): Promise<string>;
+  /** Optional: send an image + prompt for vision analysis */
+  visionMessage?(imageBase64: string, mimeType: string, prompt: string, config: ProviderConfig): Promise<string>;
 }

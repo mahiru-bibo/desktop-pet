@@ -10,6 +10,7 @@ declare global {
   interface Window {
     electronAPI: {
       moveWindow: (dx: number, dy: number) => void;
+      resizeWindow: (width: number, height: number) => void;
       openChat: () => void;
       onSpeak: (callback: (text: string) => void) => void;
       onSetAnimation: (callback: (state: string) => void) => void;
@@ -18,6 +19,8 @@ declare global {
         characterId: number;
         pixelScale: number;
         bubbleDuration: number;
+        imageDataUrl?: string;
+        imageDisplayWidth?: number;
       }>;
     };
   }
@@ -51,12 +54,16 @@ class PetApp {
     let characterId = 0;
     let pixelScale = 8;
     let bubbleDuration = 8000;
+    let imageDataUrl: string | undefined;
+    let imageDisplayWidth: number | undefined;
 
     try {
       const settings = await window.electronAPI.getSettings();
       characterId = settings.characterId ?? 0;
       pixelScale = settings.pixelScale ?? 8;
       bubbleDuration = settings.bubbleDuration ?? 8000;
+      imageDataUrl = settings.imageDataUrl;
+      imageDisplayWidth = settings.imageDisplayWidth;
     } catch (_) {
       // Use defaults if IPC not yet available
     }
@@ -66,6 +73,21 @@ class PetApp {
 
     // Setup animation controller
     this.animCtrl = new AnimationController(characterId);
+
+    // Load image if character uses image mode
+    if (imageDataUrl) {
+      try {
+        if (imageDisplayWidth) {
+          this.renderer.setImageDisplayWidth(imageDisplayWidth);
+        }
+        await this.renderer.loadImage(imageDataUrl);
+        // Resize Electron window to fit the image
+        const sz = this.renderer.getSize();
+        window.electronAPI.resizeWindow(sz.width, sz.height);
+      } catch (err) {
+        console.error('Failed to load character image:', err);
+      }
+    }
 
     // Setup speech bubble
     this.bubble = new SpeechBubble(bubbleDuration);

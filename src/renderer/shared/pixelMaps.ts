@@ -177,7 +177,9 @@ export interface CharacterDef {
   id: number;
   name: string;
   emoji: string;
-  map: ColorGrid;
+  map?: ColorGrid;         // pixel chars only
+  imagePath?: string;      // image chars: path relative to project root
+  displayWidth?: number;   // image chars: target display width (default 200px)
 }
 
 export const CHARACTERS: CharacterDef[] = [
@@ -185,6 +187,7 @@ export const CHARACTERS: CharacterDef[] = [
   { id: 1, name: '剑士', emoji: '⚔️', map: parseMap(swordRaw) },
   { id: 2, name: '魔法师', emoji: '🧙', map: parseMap(mageRaw) },
   { id: 3, name: '猫娘', emoji: '😺', map: parseMap(catRaw) },
+  { id: 4, name: '椎名', emoji: '🌸', imagePath: 'assets/characters/shiiina.jpg', displayWidth: 300 },
 ];
 
 // ── Animation variant maps ──

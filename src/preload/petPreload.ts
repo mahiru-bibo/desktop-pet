@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('pet:save-position');
   },
 
+  // Resize pet window to fit image
+  resizeWindow: (width: number, height: number) => {
+    ipcRenderer.send('pet:resize-window', { width, height });
+  },
+
   // Open the chat window
   openChat: () => {
     ipcRenderer.send('pet:open-chat');
@@ -38,6 +43,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     characterId: number;
     pixelScale: number;
     bubbleDuration: number;
+    imageDataUrl?: string;
+    imageDisplayWidth?: number;
   }> => {
     return ipcRenderer.invoke('settings:get-pet');
   },

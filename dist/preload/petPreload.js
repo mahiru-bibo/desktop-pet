@@ -12,6 +12,10 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     savePosition: () => {
         electron_1.ipcRenderer.send('pet:save-position');
     },
+    // Resize pet window to fit image
+    resizeWindow: (width, height) => {
+        electron_1.ipcRenderer.send('pet:resize-window', { width, height });
+    },
     // Open the chat window
     openChat: () => {
         electron_1.ipcRenderer.send('pet:open-chat');

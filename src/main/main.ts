@@ -3,8 +3,9 @@
 import { app } from 'electron';
 import { createPetWindow } from './windows/petWindow';
 import { createChatWindow } from './windows/chatWindow';
-import { createTray } from './tray';
-import { registerIpcHandlers, setPetWindow, setChatWindow } from './ipc';
+import { createTray, refreshTrayMenu, setObserverEnabled } from './tray';
+import { registerIpcHandlers, setPetWindow, setChatWindow, setObserver } from './ipc';
+import { ScreenObserver } from './screenObserver';
 
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
@@ -25,11 +26,20 @@ app.whenReady().then(() => {
   setPetWindow(petWin);
   setChatWindow(chatWin);
 
+  // Create screen observer
+  const observer = new ScreenObserver();
+  observer.setPetWindow(petWin);
+  setObserver(observer);
+
   // Register IPC handlers
   registerIpcHandlers();
 
-  // System tray
-  createTray(petWin, chatWin);
+  // System tray — pass observer toggle callback
+  createTray(petWin, chatWin, () => {
+    const enabled = observer.toggle();
+    setObserverEnabled(enabled);
+    return enabled;
+  });
 
   // On Windows, clicking dock icon doesn't exist, but handle window-all-closed
   app.on('window-all-closed', () => {

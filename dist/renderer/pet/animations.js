@@ -1,4 +1,4 @@
-// Animation controller - plain JS
+// Animation controller - plain JS (image character support)
 function AnimationController(characterId) {
   characterId = characterId || 0;
   this.currentState = 'idle';
@@ -8,11 +8,16 @@ function AnimationController(characterId) {
   this.talkFrames = []; this.talkFrameInterval = 180; this.talkTimer = 0;
   this.sitThreshold = 30000;
   this.onSitDown = null;
-  var ch = CHARACTERS.find(function(c) { return c.id === characterId; });
-  this.character = ch || CHARACTERS[0];
-  this.baseMap = this._cloneGrid(this.character.map);
-  this._genWalk(); this._genTalk();
+  // Support both pixel and image characters
+  this._initChar(characterId);
 }
+AnimationController.prototype._initChar = function(cid) {
+  var ch = CHARACTERS.find(function(c) { return c.id === cid; });
+  this.character = ch || CHARACTERS[0];
+  this.baseMap = this.character.map ? this._cloneGrid(this.character.map) : undefined;
+  this._hasPixel = this.character.map !== undefined;
+  if (this._hasPixel) { this._genWalk(); this._genTalk(); }
+};
 AnimationController.prototype.setState = function(s) {
   if (this.currentState === s) return;
   this.currentState = s;
@@ -35,26 +40,32 @@ AnimationController.prototype.tick = function(dt) {
 };
 AnimationController.prototype._i = function(dt) {
   this.idleTimer += dt;
-  if (this.idleTimer >= this.sitThreshold) { this.setState('sit'); if(this.onSitDown) this.onSitDown(); return this._s(dt); }
-  return { grid: this.baseMap, offsetX: 0, offsetY: Math.sin(this.elapsed*2*Math.PI/this.bobPeriod)*this.bobAmplitude };
+  if (this._hasPixel && this.idleTimer >= this.sitThreshold) { this.setState('sit'); if(this.onSitDown) this.onSitDown(); return this._s(dt); }
+  return { grid: this._hasPixel ? this.baseMap : undefined, offsetX: 0, offsetY: Math.sin(this.elapsed*2*Math.PI/this.bobPeriod)*this.bobAmplitude };
 };
 AnimationController.prototype._w = function(dt) {
-  this.walkTimer += dt;
-  if (this.walkTimer >= this.walkFrameInterval) { this.walkTimer-=this.walkFrameInterval; this.frameIndex=(this.frameIndex+1)%this.walkFrames.length; }
-  return { grid: this.walkFrames[this.frameIndex]||this.baseMap, offsetX: Math.sin(this.elapsed*Math.PI/150)*1, offsetY:0 };
+  if (this._hasPixel) {
+    this.walkTimer += dt;
+    if (this.walkTimer >= this.walkFrameInterval) { this.walkTimer-=this.walkFrameInterval; this.frameIndex=(this.frameIndex+1)%this.walkFrames.length; }
+  }
+  return { grid: this._hasPixel ? (this.walkFrames[this.frameIndex]||this.baseMap) : undefined, offsetX: Math.sin(this.elapsed*Math.PI/150)*1, offsetY:0 };
 };
 AnimationController.prototype._s = function() {
-  return { grid: this._sitGrid(), offsetX:0, offsetY: Math.sin(this.elapsed*Math.PI/3000)*0.5 };
+  return { grid: this._hasPixel ? this._sitGrid() : undefined, offsetX:0, offsetY: Math.sin(this.elapsed*Math.PI/3000)*0.5 };
 };
 AnimationController.prototype._t = function(dt) {
-  this.talkTimer += dt;
-  if (this.talkTimer >= this.talkFrameInterval) { this.talkTimer-=this.talkFrameInterval; this.frameIndex=(this.frameIndex+1)%this.talkFrames.length; }
-  return { grid: this.talkFrames[this.frameIndex]||this.baseMap, offsetX:0, offsetY: Math.sin(this.elapsed*2*Math.PI/2000)*0.8 };
+  if (this._hasPixel) {
+    this.talkTimer += dt;
+    if (this.talkTimer >= this.talkFrameInterval) { this.talkTimer-=this.talkFrameInterval; this.frameIndex=(this.frameIndex+1)%this.talkFrames.length; }
+  }
+  return { grid: this._hasPixel ? (this.talkFrames[this.frameIndex]||this.baseMap) : undefined, offsetX:0, offsetY: Math.sin(this.elapsed*2*Math.PI/2000)*0.8 };
 };
 AnimationController.prototype._genWalk = function() {
+  if (!this.baseMap) { this.walkFrames = []; return; }
   this.walkFrames = [this.baseMap, this._modLegs(this.baseMap,true), this.baseMap, this._modLegs(this.baseMap,false)];
 };
 AnimationController.prototype._genTalk = function() {
+  if (!this.baseMap) { this.talkFrames = []; return; }
   this.talkFrames = [this.baseMap, this._modMouth(this.baseMap,'half'), this._modMouth(this.baseMap,'open'), this._modMouth(this.baseMap,'half')];
 };
 AnimationController.prototype._modLegs = function(grid, lf) {
@@ -81,6 +92,7 @@ AnimationController.prototype._modMouth = function(grid, state) {
   return c;
 };
 AnimationController.prototype._sitGrid = function() {
+  if (!this.baseMap) return [];
   var c=this._cloneGrid(this.baseMap);
   for(var y=20;y<32;y++){var s=this.baseMap[y];if(!s)continue;
     var ty=Math.min(31,24+Math.floor((y-20)*0.6)), tr=c[ty];if(!tr){c[ty]=[];tr=c[ty];}

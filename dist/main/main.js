@@ -6,6 +6,7 @@ const petWindow_1 = require("./windows/petWindow");
 const chatWindow_1 = require("./windows/chatWindow");
 const tray_1 = require("./tray");
 const ipc_1 = require("./ipc");
+const screenObserver_1 = require("./screenObserver");
 // Prevent multiple instances
 const gotLock = electron_1.app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -21,10 +22,18 @@ electron_1.app.whenReady().then(() => {
     // Register windows in IPC
     (0, ipc_1.setPetWindow)(petWin);
     (0, ipc_1.setChatWindow)(chatWin);
+    // Create screen observer
+    const observer = new screenObserver_1.ScreenObserver();
+    observer.setPetWindow(petWin);
+    (0, ipc_1.setObserver)(observer);
     // Register IPC handlers
     (0, ipc_1.registerIpcHandlers)();
-    // System tray
-    (0, tray_1.createTray)(petWin, chatWin);
+    // System tray — pass observer toggle callback
+    (0, tray_1.createTray)(petWin, chatWin, () => {
+        const enabled = observer.toggle();
+        (0, tray_1.setObserverEnabled)(enabled);
+        return enabled;
+    });
     // On Windows, clicking dock icon doesn't exist, but handle window-all-closed
     electron_1.app.on('window-all-closed', () => {
         // Don't quit — tray keeps app alive

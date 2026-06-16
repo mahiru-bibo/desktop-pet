@@ -9,7 +9,7 @@ export type AnimationState = 'idle' | 'walk' | 'sit' | 'talk';
 export class AnimationController {
   public currentState: AnimationState = 'idle';
   public character: CharacterDef;
-  private baseMap: ColorGrid;
+  private baseMap?: ColorGrid;
 
   // Timing
   private elapsed: number = 0;
@@ -37,21 +37,33 @@ export class AnimationController {
   // Callbacks
   public onSitDown?: () => void;
 
+  /** Whether this character uses a pixel map (vs image) */
+  private get hasPixelMap(): boolean {
+    return this.character.map !== undefined;
+  }
+
   constructor(characterId: number = 0) {
     const char = CHARACTERS.find(c => c.id === characterId);
     this.character = char || CHARACTERS[0];
-    this.baseMap = this.cloneGrid(this.character.map);
-    this.generateWalkFrames();
-    this.generateTalkFrames();
+    this.baseMap = this.character.map ? this.cloneGrid(this.character.map) : undefined;
+    if (this.hasPixelMap) {
+      this.generateWalkFrames();
+      this.generateTalkFrames();
+    }
   }
 
   setCharacter(characterId: number) {
     const char = CHARACTERS.find(c => c.id === characterId);
     if (!char) return;
     this.character = char;
-    this.baseMap = this.cloneGrid(char.map);
-    this.generateWalkFrames();
-    this.generateTalkFrames();
+    this.baseMap = char.map ? this.cloneGrid(char.map) : undefined;
+    if (this.hasPixelMap) {
+      this.generateWalkFrames();
+      this.generateTalkFrames();
+    } else {
+      this.walkFrames = [];
+      this.talkFrames = [];
+    }
   }
 
   setState(state: AnimationState) {
@@ -93,8 +105,8 @@ export class AnimationController {
   private tickIdle(deltaMs: number): FrameData {
     this.idleTimer += deltaMs;
 
-    // Auto-transition to sit after long idle
-    if (this.idleTimer >= this.sitThreshold && this.currentState === 'idle') {
+    // Auto-transition to sit after long idle (pixel chars only)
+    if (this.idleTimer >= this.sitThreshold && this.currentState === 'idle' && this.hasPixelMap) {
       this.setState('sit');
       this.onSitDown?.();
       return this.tickSit(deltaMs);
@@ -104,24 +116,26 @@ export class AnimationController {
     const bobY = Math.sin(this.elapsed * 2 * Math.PI / this.bobPeriod) * this.bobAmplitude;
 
     return {
-      grid: this.baseMap,
+      grid: this.hasPixelMap ? this.baseMap : undefined,
       offsetX: 0,
       offsetY: bobY,
     };
   }
 
   private tickWalk(deltaMs: number): FrameData {
-    this.walkTimer += deltaMs;
-    if (this.walkTimer >= this.walkFrameInterval) {
-      this.walkTimer -= this.walkFrameInterval;
-      this.frameIndex = (this.frameIndex + 1) % this.walkFrames.length;
+    if (this.hasPixelMap) {
+      this.walkTimer += deltaMs;
+      if (this.walkTimer >= this.walkFrameInterval) {
+        this.walkTimer -= this.walkFrameInterval;
+        this.frameIndex = (this.frameIndex + 1) % this.walkFrames.length;
+      }
     }
 
     // Slight horizontal bob while walking
     const bobX = Math.sin(this.elapsed * Math.PI / 150) * 1;
 
     return {
-      grid: this.walkFrames[this.frameIndex] || this.baseMap,
+      grid: this.hasPixelMap ? (this.walkFrames[this.frameIndex] || this.baseMap) : undefined,
       offsetX: bobX,
       offsetY: 0,
     };
@@ -131,26 +145,27 @@ export class AnimationController {
     // Sitting: very subtle slower breathing
     const bobY = Math.sin(this.elapsed * Math.PI / 3000) * 0.5;
 
-    // Generate sit frame procedurally: compress lower body
     return {
-      grid: this.getSitGrid(),
+      grid: this.hasPixelMap ? this.getSitGrid() : undefined,
       offsetX: 0,
       offsetY: bobY,
     };
   }
 
   private tickTalk(deltaMs: number): FrameData {
-    this.talkTimer += deltaMs;
-    if (this.talkTimer >= this.talkFrameInterval) {
-      this.talkTimer -= this.talkFrameInterval;
-      this.frameIndex = (this.frameIndex + 1) % this.talkFrames.length;
+    if (this.hasPixelMap) {
+      this.talkTimer += deltaMs;
+      if (this.talkTimer >= this.talkFrameInterval) {
+        this.talkTimer -= this.talkFrameInterval;
+        this.frameIndex = (this.frameIndex + 1) % this.talkFrames.length;
+      }
     }
 
     // Gentle bob while talking
     const bobY = Math.sin(this.elapsed * 2 * Math.PI / 2000) * 0.8;
 
     return {
-      grid: this.talkFrames[this.frameIndex] || this.baseMap,
+      grid: this.hasPixelMap ? (this.talkFrames[this.frameIndex] || this.baseMap) : undefined,
       offsetX: 0,
       offsetY: bobY,
     };
@@ -160,6 +175,7 @@ export class AnimationController {
 
   /** Generate walk frames by modifying the lower body rows */
   private generateWalkFrames() {
+    if (!this.baseMap) { this.walkFrames = []; return; }
     this.walkFrames = [
       this.baseMap, // frame 0: neutral
       this.modifyLegs(this.baseMap, true),  // left leg forward
@@ -197,6 +213,7 @@ export class AnimationController {
 
   /** Generate talk frames: different mouth shapes */
   private generateTalkFrames() {
+    if (!this.baseMap) { this.talkFrames = []; return; }
     this.talkFrames = [
       this.baseMap,                              // closed mouth
       this.modifyMouth(this.baseMap, 'half'),     // half open
@@ -238,6 +255,7 @@ export class AnimationController {
 
   /** Generate sit grid: compress lower body into fewer rows */
   private getSitGrid(): ColorGrid {
+    if (!this.baseMap) return [];
     const clone = this.cloneGrid(this.baseMap);
 
     // For sitting: widen the stance, compress vertical

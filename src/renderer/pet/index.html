@@ -11,6 +11,11 @@
   <canvas id="pet-canvas"></canvas>
   <!-- Speech bubble is injected by speechBubble.ts -->
 </div>
-<script src="pet.js"></script>
+	<!-- Load in dependency order -->
+	<script src="../shared/pixelMaps.js"></script>
+	<script src="renderer.js"></script>
+	<script src="animations.js"></script>
+	<script src="speechBubble.js"></script>
+	<script src="pet.js"></script>
 </body>
 </html>

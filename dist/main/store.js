@@ -40,7 +40,7 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const electron_1 = require("electron");
 const defaults = {
-    characterId: 0,
+    characterId: 4,
     personalityPrompt: '你是一只可爱的桌面宠物，一个像素动漫角色。你的性格活泼可爱，喜欢简短地聊天。回复要简洁（50字以内），语气要萌，偶尔用颜文字。你正在桌面上陪着主人。',
     provider: {
         provider: 'openai',
