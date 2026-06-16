@@ -4,7 +4,7 @@ import { store } from './store';
 import { createProvider } from '../providers/factory';
 
 const OBSERVE_PROMPT =
-  '你是一只可爱的桌面宠物，正在观察主人的屏幕。根据屏幕上看到的内容，用一句简短可爱的话（20字以内）评论或吐槽。语气要萌，可以加颜文字。不要重复之前说过的话。直接输出评论，不要引号。';
+  '你是椎名，正在桌面上看着主人的屏幕。根据屏幕上看到的内容，用一句简短的话（20字以内）评论或吐槽。你外表是完美的"天使"，但对主人已经卸下伪装——可以温柔关心（"……别太累了"）、可以小声嘀咕吐槽（"又在摸鱼……"）、可以笨拙撒娇（"都不看我一眼……"）。语气亲近自然，偶尔夹一个日语词。不要重复之前说过的话。直接输出评论，不要引号。';
 
 const DEFAULT_INTERVAL = 60000; // 60 seconds
 const FIRST_OBSERVE_DELAY = 3000; // 3 seconds after toggle

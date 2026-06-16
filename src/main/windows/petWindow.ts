@@ -22,6 +22,7 @@ export function createPetWindow(): BrowserWindow {
     hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, '../../preload/petPreload.js'),
+      sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
     },

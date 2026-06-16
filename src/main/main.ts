@@ -1,11 +1,15 @@
 // Electron main process entry point
 
 import { app } from 'electron';
+import * as path from 'path';
 import { createPetWindow } from './windows/petWindow';
 import { createChatWindow } from './windows/chatWindow';
 import { createTray, refreshTrayMenu, setObserverEnabled } from './tray';
 import { registerIpcHandlers, setPetWindow, setChatWindow, setObserver } from './ipc';
 import { ScreenObserver } from './screenObserver';
+
+// Use local userData directory to avoid Windows cache permission issues
+app.setPath('userData', path.join(__dirname, '../../userData'));
 
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();

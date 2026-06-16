@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title></title>
+<title>Desktop Pet</title>
 <link rel="stylesheet" href="pet.css">
 </head>
 <body>
@@ -11,18 +11,15 @@
   <canvas id="pet-canvas"></canvas>
   <!-- Speech bubble is injected by speechBubble.ts -->
 </div>
-
-<!-- Chat input bar — hidden by default -->
 <div id="chat-bar" class="chat-hidden">
-  <input type="text" id="chat-input" placeholder="和桌宠聊天..." maxlength="500" autocomplete="off" />
+  <input type="text" id="chat-input" placeholder="和椎名说话..." maxlength="500" />
   <button id="send-btn">发送</button>
 </div>
-
-<!-- Load in dependency order -->
-<script src="../shared/pixelMaps.js"></script>
-<script src="renderer.js"></script>
-<script src="animations.js"></script>
-<script src="speechBubble.js"></script>
-<script src="pet.js"></script>
+	<!-- Load in dependency order -->
+	<script src="../shared/pixelMaps.js"></script>
+	<script src="renderer.js"></script>
+	<script src="animations.js"></script>
+	<script src="speechBubble.js"></script>
+	<script src="pet.js"></script>
 </body>
 </html>

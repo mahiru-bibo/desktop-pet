@@ -40,8 +40,7 @@ class ChatApp {
     // Load settings for header
     try {
       const settings = await electronAPI.getSettings();
-      const emojis = ['🎀', '⚔️', '🧙', '😺'];
-      this.headerEmoji.textContent = emojis[settings.characterId] || '🎀';
+      this.headerEmoji.textContent = '🌸';
       this.headerName.textContent = `${settings.characterName} · ${settings.model}`;
     } catch (_) {
       // defaults

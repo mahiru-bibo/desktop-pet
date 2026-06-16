@@ -63,8 +63,8 @@
     }
 
     // ── Send message ──
-    sendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keydown', function(e) {
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    if (chatInput) chatInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -76,14 +76,15 @@
   }
 
   function toggleChatBar() {
+    if (!chatBar) return;
     chatVisible = !chatVisible;
     if (chatVisible) {
       chatBar.classList.remove('chat-hidden');
-      chatInput.focus();
+      if (chatInput) chatInput.focus();
     } else {
       chatBar.classList.add('chat-hidden');
     }
-    if (window.electronAPI.toggleChat) {
+    if (window.electronAPI && window.electronAPI.toggleChat) {
       window.electronAPI.toggleChat(chatVisible);
     }
   }

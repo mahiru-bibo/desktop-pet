@@ -2,3 +2,5 @@ node_modules/
 release/
 .env
 *.log
+userData/
+_test-userdata/

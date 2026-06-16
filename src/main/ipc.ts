@@ -63,7 +63,12 @@ export function registerIpcHandlers() {
   // ── Settings (pet) ──
   ipcMain.handle('settings:get-pet', () => {
     const charId = store.get('characterId');
-    const char = CHARACTERS.find(c => c.id === charId);
+    let char = CHARACTERS.find(c => c.id === charId);
+    // Fallback: if saved characterId no longer exists, use first available
+    if (!char) {
+      char = CHARACTERS[0];
+      if (char) store.set('characterId', char.id);
+    }
     let imageDataUrl: string | undefined;
     if (char?.imagePath) {
       try {
@@ -90,10 +95,10 @@ export function registerIpcHandlers() {
   ipcMain.handle('settings:get-chat', () => {
     const provider = store.get('provider');
     const charId = store.get('characterId');
-    const char = CHARACTERS.find(c => c.id === charId);
+    const char = CHARACTERS.find(c => c.id === charId) || CHARACTERS[0];
     return {
       characterId: charId,
-      characterName: char?.name || '女仆',
+      characterName: char?.name || '椎名',
       provider: provider.provider,
       model: provider.model,
     };
