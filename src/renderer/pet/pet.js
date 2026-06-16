@@ -1,10 +1,11 @@
-// Pet window entry - plain JS (image character support)
+// Pet window entry — plain JS
+// Handles: drag, animation, speech bubble, minimal chat input
 (function() {
   var renderer, animCtrl, bubble, canvas, container;
   var dragging=false, sx=0, sy=0, hasMoved=false, TH=3;
   var lastTime=0;
 
-  // Chat bar
+  // Chat
   var chatBar, chatInput, sendBtn;
   var chatVisible = false;
 
@@ -30,13 +31,11 @@
     renderer=new CharacterRenderer(canvas,ps);
     animCtrl=new AnimationController(cid);
 
-    // Load image for image-based characters
     if (imgDataUrl) {
       try {
         if (imgW) renderer.setImageDisplayWidth(imgW);
         await renderer.loadImage(imgDataUrl);
         var sz = renderer.getSize();
-        console.log('[Pet] Image character loaded, size=' + JSON.stringify(sz));
         window.electronAPI.resizeWindow(sz.width, sz.height);
       } catch(e) { console.error('[Pet] Failed to load image:', e); }
     }
@@ -52,12 +51,12 @@
     window.addEventListener('mousemove',function(e){if(!dragging)return;var dx=e.screenX-sx,dy=e.screenY-sy;if(Math.abs(dx)>TH||Math.abs(dy)>TH)hasMoved=true;if(hasMoved){window.electronAPI.moveWindow(dx,dy);sx=e.screenX;sy=e.screenY;animCtrl.setState('walk');}});
     window.addEventListener('mouseup',function(){if(dragging){dragging=false;if(hasMoved){animCtrl.setState('idle');window.electronAPI.savePosition();}}});
 
-    // ── Click → toggle chat bar (not open separate window) ──
+    // ── Click → toggle chat input ──
     canvas.addEventListener('mouseup',function(){
       if(!hasMoved) toggleChatBar();
     });
 
-    // ── Tray toggle ──
+    // Tray toggle
     if (window.electronAPI.onToggleChatFromTray) {
       window.electronAPI.onToggleChatFromTray(function(){ toggleChatBar(); });
     }
@@ -75,6 +74,10 @@
     lastTime=performance.now();loop(lastTime);
   }
 
+  // ══════════════════════════════════════════════
+  // Chat
+  // ══════════════════════════════════════════════
+
   function toggleChatBar() {
     chatVisible = !chatVisible;
     if (chatVisible) {
@@ -91,18 +94,27 @@
   function sendMessage() {
     var text = chatInput.value.trim();
     if (!text) return;
+
     chatInput.value = '';
     sendBtn.disabled = true;
+
+    // Show typing bubble
     bubble.show('...');
+
     window.electronAPI.sendMessage(text).then(function() {
       sendBtn.disabled = false;
       chatInput.focus();
+      // Response comes via onSpeak → bubble.show()
     }).catch(function(err) {
       sendBtn.disabled = false;
       chatInput.focus();
       bubble.show('发送失败: ' + (err.message || '错误'));
     });
   }
+
+  // ══════════════════════════════════════════════
+  // Window & Animation
+  // ══════════════════════════════════════════════
 
   function resizeWin() {
     var sz=renderer.getSize();

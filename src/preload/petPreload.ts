@@ -9,36 +9,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('pet:move-window', { dx, dy });
   },
 
-  // Save current window position to store
   savePosition: () => {
     ipcRenderer.send('pet:save-position');
   },
 
-  // Resize pet window to fit image
   resizeWindow: (width: number, height: number) => {
     ipcRenderer.send('pet:resize-window', { width, height });
   },
 
-  // Open the chat window
-  openChat: () => {
-    ipcRenderer.send('pet:open-chat');
+  // Toggle chat bar in pet window (resize)
+  toggleChat: (show: boolean) => {
+    ipcRenderer.send('pet:toggle-chat', { show });
   },
 
-  // Listen for speak events (AI response ready)
   onSpeak: (callback: (text: string) => void) => {
     ipcRenderer.on('pet:speak', (_event, text: string) => {
       callback(text);
     });
   },
 
-  // Listen for animation change events
   onSetAnimation: (callback: (state: string) => void) => {
     ipcRenderer.on('pet:set-animation', (_event, state: string) => {
       callback(state);
     });
   },
 
-  // Get settings from main process
   getSettings: (): Promise<{
     characterId: number;
     pixelScale: number;
@@ -47,5 +42,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     imageDisplayWidth?: number;
   }> => {
     return ipcRenderer.invoke('settings:get-pet');
+  },
+
+  // Chat API
+  sendMessage: (text: string): Promise<any> => {
+    return ipcRenderer.invoke('chat:send-message', text);
+  },
+
+  onToggleChatFromTray: (callback: () => void) => {
+    ipcRenderer.on('pet:toggle-chat-from-tray', () => {
+      callback();
+    });
   },
 });

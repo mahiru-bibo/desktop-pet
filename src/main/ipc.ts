@@ -8,6 +8,7 @@ import { createProvider } from '../providers/factory';
 import type { ChatMessage } from './store';
 import { CHARACTERS } from '../renderer/shared/pixelMaps';
 import { ScreenObserver } from './screenObserver';
+import { setChatPanelVisible } from './windows/petWindow';
 
 let petWindow: BrowserWindow | null = null;
 let chatWindow: BrowserWindow | null = null;
@@ -51,6 +52,12 @@ export function registerIpcHandlers() {
       chatWindow.show();
       chatWindow.focus();
     }
+  });
+
+  // ── Toggle chat bar in pet window ──
+  ipcMain.on('pet:toggle-chat', (_event, { show }: { show: boolean }) => {
+    if (!petWindow) return;
+    setChatPanelVisible(petWindow, show);
   });
 
   // ── Settings (pet) ──

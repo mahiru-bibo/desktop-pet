@@ -24,7 +24,9 @@ function buildMenu(petWindow: BrowserWindow, chatWindow: BrowserWindow): Menu {
     },
     {
       label: '打开聊天',
-      click: () => { chatWindow.show(); chatWindow.focus(); },
+      click: () => {
+        petWindow.webContents.send('pet:toggle-chat-from-tray');
+      },
     },
     { type: 'separator' },
     {

@@ -44,6 +44,7 @@ const path = __importStar(require("path"));
 const store_1 = require("./store");
 const factory_1 = require("../providers/factory");
 const pixelMaps_1 = require("../renderer/shared/pixelMaps");
+const petWindow_1 = require("./windows/petWindow");
 let petWindow = null;
 let chatWindow = null;
 let observer = null;
@@ -83,6 +84,12 @@ function registerIpcHandlers() {
             chatWindow.show();
             chatWindow.focus();
         }
+    });
+    // ── Toggle chat bar in pet window ──
+    electron_1.ipcMain.on('pet:toggle-chat', (_event, { show }) => {
+        if (!petWindow)
+            return;
+        (0, petWindow_1.setChatPanelVisible)(petWindow, show);
     });
     // ── Settings (pet) ──
     electron_1.ipcMain.handle('settings:get-pet', () => {

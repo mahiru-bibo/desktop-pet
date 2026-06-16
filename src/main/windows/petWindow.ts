@@ -52,3 +52,14 @@ export function createPetWindow(): BrowserWindow {
 
   return win;
 }
+
+const CHAT_BAR_HEIGHT = 48;
+
+export function setChatPanelVisible(win: BrowserWindow, visible: boolean) {
+  const bounds = win.getBounds();
+  if (visible) {
+    win.setSize(bounds.width, bounds.height + CHAT_BAR_HEIGHT);
+  } else {
+    win.setSize(bounds.width, bounds.height - CHAT_BAR_HEIGHT);
+  }
+}

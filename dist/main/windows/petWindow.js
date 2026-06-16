@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createPetWindow = createPetWindow;
+exports.setChatPanelVisible = setChatPanelVisible;
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const store_1 = require("../store");
@@ -76,5 +77,15 @@ function createPetWindow() {
     // Prevent title from showing
     win.setTitle('Desktop Pet');
     return win;
+}
+const CHAT_BAR_HEIGHT = 48;
+function setChatPanelVisible(win, visible) {
+    const bounds = win.getBounds();
+    if (visible) {
+        win.setSize(bounds.width, bounds.height + CHAT_BAR_HEIGHT);
+    }
+    else {
+        win.setSize(bounds.width, bounds.height - CHAT_BAR_HEIGHT);
+    }
 }
 //# sourceMappingURL=petWindow.js.map

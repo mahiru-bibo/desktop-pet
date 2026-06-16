@@ -32,3 +32,67 @@ html, body {
 #pet-canvas:active {
   cursor: grabbing;
 }
+
+/* ── Chat Input Bar ─────────────────────────── */
+#chat-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(22, 33, 62, 0.92);
+  border-radius: 20px;
+  border: 1px solid #0f3460;
+  margin-top: 4px;
+  backdrop-filter: blur(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#chat-bar.chat-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+#chat-input {
+  width: 180px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 1px solid #0f3460;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 12px;
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#chat-input:focus {
+  border-color: #e94560;
+}
+
+#chat-input::placeholder {
+  color: #555;
+  font-size: 11px;
+}
+
+#send-btn {
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: none;
+  background: #e94560;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+#send-btn:hover {
+  background: #c73652;
+}
+
+#send-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
