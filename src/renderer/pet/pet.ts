@@ -21,9 +21,21 @@ declare global {
         bubbleDuration: number;
         imageDataUrl?: string;
         imageDisplayWidth?: number;
+        emotionDataUrls?: Record<string, string>;
       }>;
     };
   }
+}
+
+// ── Helpers ──
+
+/** Parse emotion tag from text. Format: [emotion] rest of text */
+function parseEmotion(text: string): { emotion: string | null; cleanText: string } {
+  const match = text.match(/^\[([^\]]+)\]\s*/);
+  if (match) {
+    return { emotion: match[1], cleanText: text.slice(match[0].length) };
+  }
+  return { emotion: null, cleanText: text };
 }
 
 // ── App ──
@@ -80,7 +92,8 @@ class PetApp {
         if (imageDisplayWidth) {
           this.renderer.setImageDisplayWidth(imageDisplayWidth);
         }
-        await this.renderer.loadImage(imageDataUrl);
+        const emotions = settings.emotionDataUrls || {};
+        await this.renderer.loadImages(imageDataUrl, emotions);
         // Resize Electron window to fit the image
         const sz = this.renderer.getSize();
         window.electronAPI.resizeWindow(sz.width, sz.height);
@@ -95,8 +108,24 @@ class PetApp {
 
     // Listen for speak events from main process
     window.electronAPI.onSpeak((text: string) => {
+      const { emotion, cleanText } = parseEmotion(text);
+
+      // Switch to emotion image if tag found
+      if (emotion) {
+        this.renderer.setEmotion(emotion);
+      }
+
       this.animCtrl.setState('talk');
-      this.bubble.show(text);
+      this.bubble.show(cleanText);
+
+      // When bubble auto-hides, revert to idle state + default image
+      this.bubble.onHide = () => {
+        this.renderer.setEmotion('');
+        if (this.animCtrl.currentState === 'talk') {
+          this.animCtrl.setState('idle');
+        }
+        this.bubble.onHide = undefined;
+      };
     });
 
     // Listen for animation changes

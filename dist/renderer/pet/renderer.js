@@ -12,6 +12,9 @@ function CharacterRenderer(canvas, pixelSize) {
   this.image = null;
   this.imageDisplayWidth = 200;
   this.isImageMode = false;
+  // Multi-emotion image support
+  this.emotionImages = {};
+  this.currentEmotion = '';
   this.resize();
 }
 
@@ -52,6 +55,27 @@ CharacterRenderer.prototype.loadImage = function(src) {
   });
 };
 
+CharacterRenderer.prototype.loadImages = function(idleSrc, emotions) {
+  var self = this;
+  return this.loadImage(idleSrc).then(function() {
+    if (!emotions || Object.keys(emotions).length === 0) return;
+    var promises = Object.keys(emotions).map(function(emotion) {
+      return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() { self.emotionImages[emotion] = img; resolve(); };
+        img.onerror = function() { console.warn('Failed to load emotion image: ' + emotion); resolve(); };
+        img.src = emotions[emotion];
+      });
+    });
+    return Promise.all(promises);
+  });
+};
+
+CharacterRenderer.prototype.setEmotion = function(emotion) {
+  if (!emotion || emotion === 'idle') { this.currentEmotion = ''; return; }
+  if (this.emotionImages[emotion]) { this.currentEmotion = emotion; }
+};
+
 CharacterRenderer.prototype.setImageDisplayWidth = function(w) {
   this.imageDisplayWidth = w;
   if (this.isImageMode) this._resizeForImage();
@@ -68,9 +92,10 @@ CharacterRenderer.prototype.draw = function(frame) {
 CharacterRenderer.prototype._drawImageFrame = function(frame) {
   var ctx = this.ctx;
   ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  var img = (this.currentEmotion && this.emotionImages[this.currentEmotion]) || this.image;
   ctx.save();
   ctx.translate(frame.offsetX || 0, frame.offsetY || 0);
-  ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+  if (img) ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
   ctx.restore();
 };
 

@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     bubbleDuration: number;
     imageDataUrl?: string;
     imageDisplayWidth?: number;
+    emotionDataUrls?: Record<string, string>;
   }> => {
     return ipcRenderer.invoke('settings:get-pet');
   },

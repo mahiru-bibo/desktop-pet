@@ -2,6 +2,12 @@
 (function() {
   var ml, inp, sbtn, hdrN, hdrE;
 
+  function parseEmotion(text) {
+    var m = text.match(/^\[([^\]]+)\]\s*/);
+    if (m) return { emotion: m[1], cleanText: text.slice(m[0].length) };
+    return { emotion: null, cleanText: text };
+  }
+
   async function init() {
     ml=document.getElementById('message-list');
     inp=document.getElementById('chat-input');
@@ -24,7 +30,7 @@
 
   async function send(){var t=inp.value.trim();if(!t)return;addMsg({role:'user',content:t,timestamp:Date.now()});inp.value='';sbtn.disabled=true;inp.disabled=true;var ty=addTyping();try{await window.electronAPI.sendMessage(t);ty&&ty.remove();}catch(e){ty&&ty.remove();addMsg({role:'assistant',content:'发送失败: '+(e.message||'未知错误'),timestamp:Date.now()});sbtn.disabled=false;inp.disabled=false;inp.focus();}}
 
-  function addMsg(m){var el=document.createElement('div');el.className='message '+m.role;var h='';if(m.role==='assistant')h+='<div class="role-label">🐾 宠物</div>';h+='<div>'+esc(m.content)+'</div>';if(m.timestamp){var d=new Date(m.timestamp);h+='<div class="time">'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+'</div>';}el.innerHTML=h;ml.appendChild(el);ml.scrollTop=ml.scrollHeight;}
+  function addMsg(m){var el=document.createElement('div');el.className='message '+m.role;var h='';var dc=m.content;if(m.role==='assistant'){h+='<div class="role-label">🐾 宠物</div>';dc=parseEmotion(m.content).cleanText;}h+='<div>'+esc(dc)+'</div>';if(m.timestamp){var d=new Date(m.timestamp);h+='<div class="time">'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+'</div>';}el.innerHTML=h;ml.appendChild(el);ml.scrollTop=ml.scrollHeight;}
 
   function addTyping(){var el=document.createElement('div');el.className='message assistant';el.innerHTML='<div class="role-label">🐾 宠物</div><div>正在思考...</div>';ml.appendChild(el);ml.scrollTop=ml.scrollHeight;return el;}
 

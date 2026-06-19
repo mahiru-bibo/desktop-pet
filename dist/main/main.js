@@ -36,13 +36,16 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
+const store_1 = require("./store");
 const petWindow_1 = require("./windows/petWindow");
 const chatWindow_1 = require("./windows/chatWindow");
 const tray_1 = require("./tray");
 const ipc_1 = require("./ipc");
 const screenObserver_1 = require("./screenObserver");
 // Use local userData directory to avoid Windows cache permission issues
+// MUST be called before store.init() so store uses the correct path
 electron_1.app.setPath('userData', path.join(__dirname, '../../userData'));
+store_1.store.init();
 // Prevent multiple instances
 const gotLock = electron_1.app.requestSingleInstanceLock();
 if (!gotLock) {

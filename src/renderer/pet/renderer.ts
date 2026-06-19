@@ -25,6 +25,10 @@ export class CharacterRenderer {
   private imageDisplayWidth: number = 200;
   private isImageMode: boolean = false;
 
+  // Multi-emotion image support
+  private emotionImages: Map<string, HTMLImageElement> = new Map();
+  private currentEmotion: string = '';  // '' = default/idle image
+
   constructor(canvas: HTMLCanvasElement, pixelSize: number = 8) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
@@ -80,6 +84,39 @@ export class CharacterRenderer {
     });
   }
 
+  /** Load idle image + all emotion images in parallel */
+  async loadImages(idleSrc: string, emotions: Record<string, string>): Promise<void> {
+    await this.loadImage(idleSrc);
+    if (!emotions || Object.keys(emotions).length === 0) return;
+    await Promise.all(
+      Object.entries(emotions).map(([emotion, src]) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            this.emotionImages.set(emotion, img);
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn(`Failed to load emotion image: ${emotion}`);
+            resolve(); // don't fail on missing images
+          };
+          img.src = src;
+        });
+      })
+    );
+  }
+
+  /** Switch displayed image by emotion key. Pass '' to revert to default. */
+  setEmotion(emotion: string) {
+    if (!emotion || emotion === 'idle') {
+      this.currentEmotion = '';
+      return;
+    }
+    if (this.emotionImages.has(emotion)) {
+      this.currentEmotion = emotion;
+    }
+  }
+
   /** Set target display width for image characters */
   setImageDisplayWidth(w: number) {
     this.imageDisplayWidth = w;
@@ -107,10 +144,13 @@ export class CharacterRenderer {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Pick the active image: emotion override or default
+    const img = (this.currentEmotion && this.emotionImages.get(this.currentEmotion)) || this.image;
+
     ctx.save();
     // Apply animation offsets
     ctx.translate(frame.offsetX, frame.offsetY);
-    ctx.drawImage(this.image!, 0, 0, this.canvas.width, this.canvas.height);
+    if (img) ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
     ctx.restore();
   }
 

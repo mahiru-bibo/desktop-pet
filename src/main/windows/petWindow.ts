@@ -32,11 +32,19 @@ export function enforcePetSize(win: BrowserWindow) {
 
 export function createPetWindow(): BrowserWindow {
   const scale = store.get('pixelScale');
-  const pos = store.get('petPosition');
+  const rawPos = store.get('petPosition');
   const canvasSize = 32 * scale; // 32 grid * scale
 
   expectedWidth = canvasSize;
   expectedBaseHeight = canvasSize + 40; // 40px for speech bubble space
+
+  // Clamp position to current screen bounds (defensive against disconnected monitors)
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const workArea = primaryDisplay.workArea;
+  const pos = {
+    x: Math.max(workArea.x - expectedWidth + 50, Math.min(workArea.x + workArea.width - 50, rawPos.x)),
+    y: Math.max(workArea.y, Math.min(workArea.y + workArea.height - 50, rawPos.y)),
+  };
 
   const win = new BrowserWindow({
     width: expectedWidth,

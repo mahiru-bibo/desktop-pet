@@ -6,6 +6,7 @@ export class SpeechBubble {
   private textElement: HTMLElement;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
   private duration: number;
+  onHide?: () => void;  // called when bubble hides (manual or auto)
 
   constructor(duration: number = 8000) {
     this.duration = duration;
@@ -80,6 +81,7 @@ export class SpeechBubble {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
+    this.onHide?.();
   }
 
   /** Show a typing indicator while waiting for AI response */

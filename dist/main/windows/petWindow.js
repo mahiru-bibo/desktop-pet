@@ -66,10 +66,17 @@ function enforcePetSize(win) {
 }
 function createPetWindow() {
     const scale = store_1.store.get('pixelScale');
-    const pos = store_1.store.get('petPosition');
+    const rawPos = store_1.store.get('petPosition');
     const canvasSize = 32 * scale; // 32 grid * scale
     expectedWidth = canvasSize;
     expectedBaseHeight = canvasSize + 40; // 40px for speech bubble space
+    // Clamp position to current screen bounds (defensive against disconnected monitors)
+    const primaryDisplay = electron_1.screen.getPrimaryDisplay();
+    const workArea = primaryDisplay.workArea;
+    const pos = {
+        x: Math.max(workArea.x - expectedWidth + 50, Math.min(workArea.x + workArea.width - 50, rawPos.x)),
+        y: Math.max(workArea.y, Math.min(workArea.y + workArea.height - 50, rawPos.y)),
+    };
     const win = new electron_1.BrowserWindow({
         width: expectedWidth,
         height: getExpectedHeight(),

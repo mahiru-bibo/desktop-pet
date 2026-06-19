@@ -30,7 +30,22 @@ function parseMap(raw) {
 }
 
 var CHARACTERS = [
-  { id: 0, name: '椎名真昼', emoji: '🌸', imagePath: 'assets/characters/shiina.png', displayWidth: 300 },
+  {
+    id: 0,
+    name: '椎名真昼',
+    emoji: '🌸',
+    imagePath: 'assets/characters/shiina.png',
+    displayWidth: 300,
+    emotionImages: {
+      '惊讶': 'assets/characters/惊讶.png',
+      '晚安': 'assets/characters/晚安.png',
+      '不理你了': 'assets/characters/不理你了.png',
+      '害羞': 'assets/characters/害羞.png',
+      '生气': 'assets/characters/生气.png',
+      '疑惑': 'assets/characters/疑惑.png',
+      '被捉弄': 'assets/characters/被捉弄.png',
+    },
+  },
 ];
 
 // CommonJS compat for Node.js / Electron main process

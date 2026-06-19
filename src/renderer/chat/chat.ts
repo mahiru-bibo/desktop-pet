@@ -1,6 +1,15 @@
 // Chat window entry point
 // Handles: sending messages, displaying message list, loading history
 
+/** Parse emotion tag from text. Format: [emotion] rest of text */
+function parseEmotion(text: string): { emotion: string | null; cleanText: string } {
+  const match = text.match(/^\[([^\]]+)\]\s*/);
+  if (match) {
+    return { emotion: match[1], cleanText: text.slice(match[0].length) };
+  }
+  return { emotion: null, cleanText: text };
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -138,7 +147,11 @@ class ChatApp {
       html += `<div class="role-label">🐾 宠物</div>`;
     }
 
-    html += `<div>${this.escapeHtml(msg.content)}</div>`;
+    const displayContent = msg.role === 'assistant'
+      ? parseEmotion(msg.content).cleanText
+      : msg.content;
+
+    html += `<div>${this.escapeHtml(displayContent)}</div>`;
 
     if (msg.timestamp) {
       const time = new Date(msg.timestamp).toLocaleTimeString('zh-CN', {

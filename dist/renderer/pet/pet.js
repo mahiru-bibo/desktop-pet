@@ -4,6 +4,13 @@
   var dragging=false, sx=0, sy=0, hasMoved=false, TH=3;
   var lastTime=0;
 
+  // Parse emotion tag from text. Format: [emotion] rest of text
+  function parseEmotion(text) {
+    var match = text.match(/^\[([^\]]+)\]\s*/);
+    if (match) return { emotion: match[1], cleanText: text.slice(match[0].length) };
+    return { emotion: null, cleanText: text };
+  }
+
   // Chat bar
   var chatBar, chatInput, sendBtn;
   var chatVisible = false;
@@ -17,7 +24,7 @@
 
     if(!canvas||!container) return console.error('Missing DOM');
 
-    var cid=0, ps=8, bd=8000, imgDataUrl, imgW;
+    var cid=0, ps=8, bd=8000, imgDataUrl, imgW, emotions={};
     try {
       var s=await window.electronAPI.getSettings();
       cid=s.characterId||0;
@@ -25,26 +32,37 @@
       bd=s.bubbleDuration||8000;
       imgDataUrl=s.imageDataUrl;
       imgW=s.imageDisplayWidth;
+      emotions=s.emotionDataUrls||{};
     } catch(e) {}
 
     renderer=new CharacterRenderer(canvas,ps);
     animCtrl=new AnimationController(cid);
 
-    // Load image for image-based characters
+    // Load images for image-based characters (idle + emotions)
     if (imgDataUrl) {
       try {
         if (imgW) renderer.setImageDisplayWidth(imgW);
-        await renderer.loadImage(imgDataUrl);
+        await renderer.loadImages(imgDataUrl, emotions);
         var sz = renderer.getSize();
-        console.log('[Pet] Image character loaded, size=' + JSON.stringify(sz));
+        console.log('[Pet] Image character loaded, size=' + JSON.stringify(sz) + ', emotions=' + Object.keys(emotions).length);
         window.electronAPI.resizeWindow(sz.width, sz.height);
-      } catch(e) { console.error('[Pet] Failed to load image:', e); }
+      } catch(e) { console.error('[Pet] Failed to load images:', e); }
     }
 
     bubble=new SpeechBubble(bd);
     bubble.mount(container);
 
-    window.electronAPI.onSpeak(function(t){animCtrl.setState('talk');bubble.show(t);});
+    window.electronAPI.onSpeak(function(t){
+      var parsed = parseEmotion(t);
+      if (parsed.emotion) renderer.setEmotion(parsed.emotion);
+      animCtrl.setState('talk');
+      bubble.show(parsed.cleanText);
+      bubble.onHide = function() {
+        renderer.setEmotion('');
+        if (animCtrl.currentState === 'talk') animCtrl.setState('idle');
+        bubble.onHide = null;
+      };
+    });
     window.electronAPI.onSetAnimation(function(s){animCtrl.setState(s);});
 
     // ── Drag ──

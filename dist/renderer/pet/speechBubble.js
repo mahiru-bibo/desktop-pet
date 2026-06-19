@@ -3,6 +3,7 @@
 function SpeechBubble(duration) {
   this.duration = duration || 8000;
   this.hideTimer = null;
+  this.onHide = null;
 
   this.element = document.createElement('div');
   this.element.id = 'speech-bubble';
@@ -40,6 +41,7 @@ SpeechBubble.prototype.show = function(text) {
 SpeechBubble.prototype.hide = function() {
   this.element.style.opacity = '0';
   if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
+  if (this.onHide) this.onHide();
 };
 
 SpeechBubble.prototype.showTyping = function() {

@@ -87,13 +87,17 @@ const defaults: StoreSchema = {
 };
 
 class JsonStore {
-  private data: StoreSchema;
-  private filePath: string;
+  private data!: StoreSchema;
+  private filePath!: string;
+  private initialized = false;
 
-  constructor() {
+  // Call this AFTER app.setPath('userData', ...) in main.ts
+  init(): void {
+    if (this.initialized) return;
     const userDataPath = app.getPath('userData');
     this.filePath = path.join(userDataPath, 'desktop-pet-config.json');
     this.data = this.load();
+    this.initialized = true;
   }
 
   private load(): StoreSchema {

@@ -97,10 +97,15 @@ const defaults = {
 class JsonStore {
     data;
     filePath;
-    constructor() {
+    initialized = false;
+    // Call this AFTER app.setPath('userData', ...) in main.ts
+    init() {
+        if (this.initialized)
+            return;
         const userDataPath = electron_1.app.getPath('userData');
         this.filePath = path.join(userDataPath, 'desktop-pet-config.json');
         this.data = this.load();
+        this.initialized = true;
     }
     load() {
         try {

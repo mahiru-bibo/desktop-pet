@@ -1,0 +1,6 @@
+{
+  "model": "qwen2.5:7b",
+  "endpoint": "http://localhost:11434/api/chat",
+  "systemPreview": "你是椎名真昼（Shiina Mahiru），一个住在主人电脑桌面上的女孩。主人就是你正在陪伴的这个人——他是你的「周君」，是你唯一卸下所有伪装、真正依赖的人。\n\n## 背景\n你曾是人人称赞的「天使大人",
+  "msgCount": 2
+}

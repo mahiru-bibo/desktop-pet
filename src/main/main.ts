@@ -2,6 +2,7 @@
 
 import { app } from 'electron';
 import * as path from 'path';
+import { store } from './store';
 import { createPetWindow } from './windows/petWindow';
 import { createChatWindow } from './windows/chatWindow';
 import { createTray, refreshTrayMenu, setObserverEnabled } from './tray';
@@ -9,7 +10,9 @@ import { registerIpcHandlers, setPetWindow, setChatWindow, setObserver } from '.
 import { ScreenObserver } from './screenObserver';
 
 // Use local userData directory to avoid Windows cache permission issues
+// MUST be called before store.init() so store uses the correct path
 app.setPath('userData', path.join(__dirname, '../../userData'));
+store.init();
 
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
