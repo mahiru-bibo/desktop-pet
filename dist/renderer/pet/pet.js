@@ -1,7 +1,6 @@
 // Pet window entry - plain JS (image character support)
 (function() {
   var renderer, animCtrl, bubble, canvas, container;
-  var dragging=false, sx=0, sy=0, hasMoved=false, TH=3;
   var lastTime=0;
 
   // Parse emotion tag from text. Format: [emotion] rest of text
@@ -60,25 +59,67 @@
     window.electronAPI.onSpeak(function(t){
       var parsed = parseEmotion(t);
       if (parsed.emotion) renderer.setEmotion(parsed.emotion);
-      animCtrl.setState('talk');
-      bubble.show(parsed.cleanText);
-      tts.speak(parsed.cleanText, parsed.emotion);
-      bubble.onHide = function() {
-        renderer.setEmotion('');
-        if (animCtrl.currentState === 'talk') animCtrl.setState('idle');
-        bubble.onHide = null;
+
+      var shown = false;
+      var showBubble = function(bubbleMs) {
+        if (shown) return;
+        shown = true;
+        animCtrl.setState('talk');
+        bubble.show(parsed.cleanText, bubbleMs);
+        bubble.onHide = function() {
+          renderer.setEmotion('');
+          if (animCtrl.currentState === 'talk') animCtrl.setState('idle');
+          bubble.onHide = null;
+        };
       };
+
+      // Show bubble when audio actually starts (or fallback after 3s)
+      var fallback = setTimeout(function() {
+        if (!shown) console.log('[Pet] TTS slow, showing bubble anyway');
+        showBubble();
+      }, 3000);
+
+      tts.speak(parsed.cleanText, parsed.emotion, function(durationSec) {
+        clearTimeout(fallback);
+        // Match bubble duration to audio length + 0.5s buffer
+        var bubbleMs = (durationSec ? durationSec * 1000 + 500 : 0);
+        showBubble(bubbleMs);
+      });
     });
     window.electronAPI.onSetAnimation(function(s){animCtrl.setState(s);});
 
-    // ── Drag ──
-    canvas.addEventListener('mousedown',function(e){dragging=true;hasMoved=false;sx=e.screenX;sy=e.screenY;animCtrl.notifyInteraction();});
-    window.addEventListener('mousemove',function(e){if(!dragging)return;var dx=e.screenX-sx,dy=e.screenY-sy;if(Math.abs(dx)>TH||Math.abs(dy)>TH)hasMoved=true;if(hasMoved){window.electronAPI.moveWindow(dx,dy);sx=e.screenX;sy=e.screenY;animCtrl.setState('walk');}});
-    window.addEventListener('mouseup',function(){if(dragging){dragging=false;if(hasMoved){animCtrl.setState('idle');window.electronAPI.savePosition();}}});
+    // ── Drag & Click ──
+    // Drag: manual mousedown+mousemove+mouseup with screen-coord delta
+    // Click: browser-native 'click' event (reliable move detection, no manual threshold)
+    var isDragging = false, wasDrag = false, sx = 0, sy = 0, TH = 5;
 
-    // ── Click → toggle chat bar (not open separate window) ──
-    canvas.addEventListener('mouseup',function(){
-      if(!hasMoved) toggleChatBar();
+    canvas.addEventListener('mousedown', function(e) {
+      isDragging = true; wasDrag = false;
+      sx = e.screenX; sy = e.screenY;
+    });
+
+    window.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      var dx = e.screenX - sx, dy = e.screenY - sy;
+      if (Math.abs(dx) > TH || Math.abs(dy) > TH) {
+        wasDrag = true;
+        window.electronAPI.moveWindow(dx, dy);
+        sx = e.screenX; sy = e.screenY;
+      }
+    });
+
+    window.addEventListener('mouseup', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (wasDrag) {
+        window.electronAPI.savePosition();
+      }
+    });
+
+    // Native click: browser fires only when mouse hasn't moved significantly
+    canvas.addEventListener('click', function() {
+      if (wasDrag) return;
+      toggleChatBar();
     });
 
     // ── Tray toggle ──

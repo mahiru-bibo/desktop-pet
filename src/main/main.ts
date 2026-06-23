@@ -12,6 +12,7 @@ import { ScreenObserver } from './screenObserver';
 // Use local userData directory to avoid Windows cache permission issues
 // MUST be called before store.init() so store uses the correct path
 app.setPath('userData', path.join(__dirname, '../../userData'));
+
 store.init();
 
 // Prevent multiple instances

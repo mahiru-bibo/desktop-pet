@@ -5,7 +5,9 @@
 }
 
 html, body {
-  width: 100%;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   height: 100%;
   overflow: hidden;
   background: transparent;
@@ -19,6 +21,11 @@ html, body {
   align-items: center;
   justify-content: flex-end;
   background: transparent;
+  overflow: hidden;
+  flex-shrink: 0;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
 }
 
 #pet-canvas {
@@ -44,9 +51,22 @@ html, body {
   margin-top: 4px;
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  width: 100%;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   box-sizing: border-box;
   overflow: hidden;
+  flex-shrink: 0;
+  flex-grow: 0;
+  -webkit-app-region: no-drag;
+}
+
+#chat-input, #send-btn {
+  -webkit-app-region: no-drag;
+}
+
+#speech-bubble {
+  -webkit-app-region: no-drag;
 }
 
 #chat-bar.chat-hidden {

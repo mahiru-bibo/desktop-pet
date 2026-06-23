@@ -83,7 +83,7 @@
    * @param {string} [emotion] - Optional emotion tag (e.g. '害羞', '生气').
    * @returns {Promise<void>}
    */
-  TTS.prototype.speak = async function (text, emotion) {
+  TTS.prototype.speak = async function (text, emotion, onStart) {
     if (!this.enabled) return;
     if (!text || !text.trim()) return;
 
@@ -135,7 +135,7 @@
       var audioBlob = await resp.blob();
       if (signal.aborted) return; // cancelled mid-response
 
-      await this._playAudio(audioBlob, signal);
+      await this._playAudio(audioBlob, signal, onStart);
     } catch (e) {
       if (e.name === 'AbortError') return; // expected on cancellation
       console.error('[TTS] Speech failed:', e.message || e);
@@ -148,7 +148,7 @@
    * Play an audio blob via Web Audio API.
    * Returns a promise that resolves when playback finishes or rejects on abort.
    */
-  TTS.prototype._playAudio = function (blob, signal) {
+  TTS.prototype._playAudio = function (blob, signal, onStart) {
     var self = this;
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(blob);
@@ -159,35 +159,49 @@
         self._audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
 
+      // Ensure AudioContext is running — Electron/Chromium may suspend it
+      // which would cause silent playback or truncation.
+      var ac = self._audioContext;
+      if (ac.state !== 'running') {
+        ac.resume(); // fire-and-forget: decode takes long enough for resume to complete
+      }
+
       // Decode and play.
       fetch(url)
         .then(function (r) { return r.arrayBuffer(); })
-        .then(function (buf) { return self._audioContext.decodeAudioData(buf); })
+        .then(function (buf) { return ac.decodeAudioData(buf); })
         .then(function (audioBuffer) {
           URL.revokeObjectURL(url);
 
           if (signal.aborted) { resolve(); return; }
 
-          var source = self._audioContext.createBufferSource();
+          var durationSec = audioBuffer.duration;
+          console.log('[TTS] Audio decoded: ' + durationSec.toFixed(1) + 's, ' + audioBuffer.sampleRate + 'Hz');
+
+          var source = ac.createBufferSource();
           source.buffer = audioBuffer;
-          source.connect(self._audioContext.destination);
+          source.connect(ac.destination);
 
           self._currentSource = source;
 
           source.onended = function () {
+            console.log('[TTS] Playback ended (source.onended)');
             self._currentSource = null;
             resolve();
           };
 
           // Handle abort during playback.
           var onAbort = function () {
+            console.log('[TTS] Playback aborted');
             try { source.stop(); } catch (_) {}
             self._currentSource = null;
             resolve();
           };
           signal.addEventListener('abort', onAbort, { once: true });
 
+          console.log('[TTS] Starting playback...');
           source.start(0);
+          if (onStart) onStart(durationSec);
         })
         .catch(function (e) {
           URL.revokeObjectURL(url);

@@ -30,12 +30,13 @@ SpeechBubble.prototype.mount = function(parent) {
   parent.appendChild(this.element);
 };
 
-SpeechBubble.prototype.show = function(text) {
+SpeechBubble.prototype.show = function(text, duration) {
   if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
   this.textElement.textContent = text;
   this.element.style.opacity = '1';
   var self = this;
-  this.hideTimer = setTimeout(function() { self.hide(); }, this.duration);
+  var ms = duration || this.duration;
+  this.hideTimer = setTimeout(function() { self.hide(); }, ms);
 };
 
 SpeechBubble.prototype.hide = function() {

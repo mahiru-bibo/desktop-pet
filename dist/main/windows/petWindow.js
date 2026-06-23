@@ -43,34 +43,27 @@ const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const store_1 = require("../store");
 const CHAT_BAR_HEIGHT = 48;
-// Track the expected window dimensions so we can enforce them
-// and prevent any unexpected size changes (e.g. during drag).
 let expectedWidth = 0;
-let expectedBaseHeight = 0; // height without chat bar
+let expectedBaseHeight = 0;
 let chatPanelVisible = false;
 function getExpectedHeight() {
     return expectedBaseHeight + (chatPanelVisible ? CHAT_BAR_HEIGHT : 0);
 }
-function enforceSize(win) {
-    const w = getExpectedHeight();
-    if (w <= 0)
-        return; // not initialized yet
-    const [cw, ch] = win.getSize();
-    if (cw !== expectedWidth || ch !== w) {
-        win.setSize(expectedWidth, w);
-    }
-}
-// Exported for use in IPC handlers — enforces size after each window move
 function enforcePetSize(win) {
-    enforceSize(win);
+    const h = getExpectedHeight();
+    if (h <= 0 || expectedWidth <= 0)
+        return;
+    const [cw, ch] = win.getSize();
+    if (cw !== expectedWidth || ch !== h) {
+        win.setSize(expectedWidth, h);
+    }
 }
 function createPetWindow() {
     const scale = store_1.store.get('pixelScale');
     const rawPos = store_1.store.get('petPosition');
-    const canvasSize = 32 * scale; // 32 grid * scale
+    const canvasSize = 32 * scale;
     expectedWidth = canvasSize;
-    expectedBaseHeight = canvasSize + 40; // 40px for speech bubble space
-    // Clamp position to current screen bounds (defensive against disconnected monitors)
+    expectedBaseHeight = canvasSize + 40;
     const primaryDisplay = electron_1.screen.getPrimaryDisplay();
     const workArea = primaryDisplay.workArea;
     const pos = {
@@ -87,7 +80,11 @@ function createPetWindow() {
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: false,
+        maximizable: false,
+        minimizable: false,
         hasShadow: false,
+        titleBarOverlay: false,
+        titleBarStyle: 'hidden',
         webPreferences: {
             preload: path.join(__dirname, '../../preload/petPreload.js'),
             sandbox: false,
@@ -95,25 +92,46 @@ function createPetWindow() {
             nodeIntegration: false,
         },
     });
-    // Enforce window size on every move — prevents the window from
-    // growing unexpectedly during drag operations
+    // Forward renderer console to main process for debugging
+    // MUST be registered before loadFile to catch early logs
+    win.webContents.on('console-message', (_event, _level, message) => {
+        console.log('[Renderer]', message);
+    });
+    win.loadFile(path.join(__dirname, '../../renderer/pet/index.html'));
+    // Prevent the HTML document.title from setting the window title
+    win.on('page-title-updated', (event) => {
+        event.preventDefault();
+    });
+    // Debounced size enforcement on move — prevents DWM title bar
+    // from fighting with enforcePetSize during continuous drag.
+    // Enforcement runs 150ms after the LAST move event.
+    let moveEnforceTimer = null;
     win.on('moved', () => {
         const [x, y] = win.getPosition();
-        const display = electron_1.screen.getDisplayNearestPoint({ x, y });
-        const bounds = display.workArea;
-        // Enforce correct window size (defensive against drag-growth bug)
-        enforceSize(win);
-        // Clamp if too far off-screen (keep at least 50px visible)
-        const clampedX = Math.max(bounds.x - expectedWidth + 50, Math.min(bounds.x + bounds.width - 50, x));
-        const clampedY = Math.max(bounds.y, Math.min(bounds.y + bounds.height - 50, y));
-        if (clampedX !== x || clampedY !== y) {
-            win.setPosition(clampedX, clampedY);
-        }
+        store_1.store.set('petPosition', { x, y });
+        // Debounce: only enforce size after moves settle
+        if (moveEnforceTimer)
+            clearTimeout(moveEnforceTimer);
+        moveEnforceTimer = setTimeout(() => {
+            enforcePetSize(win);
+            moveEnforceTimer = null;
+        }, 150);
     });
-    // Load the pet renderer
-    win.loadFile(path.join(__dirname, '../../renderer/pet/index.html'));
-    // Prevent title from showing
-    win.setTitle('Desktop Pet');
+    // Debounced size enforcement on resize — prevents DWM from fighting
+    // during drag. Uses the same timer as moved to coalesce events.
+    win.on('resize', () => {
+        if (moveEnforceTimer)
+            clearTimeout(moveEnforceTimer);
+        moveEnforceTimer = setTimeout(() => {
+            enforcePetSize(win);
+            moveEnforceTimer = null;
+        }, 150);
+    });
+    // Also enforce size when window gains focus (DWM may resize).
+    // Delay to avoid interfering with click detection in renderer.
+    win.on('focus', () => {
+        setTimeout(() => enforcePetSize(win), 200);
+    });
     return win;
 }
 function isChatPanelVisible() {
@@ -121,18 +139,13 @@ function isChatPanelVisible() {
 }
 function setChatPanelVisible(win, visible) {
     if (chatPanelVisible === visible)
-        return; // already in desired state
+        return;
     chatPanelVisible = visible;
-    // Use absolute target height instead of relative adjustment
     win.setSize(expectedWidth, getExpectedHeight());
 }
-/**
- * Update the expected base size (called when renderer loads image chars).
- * Preserves the current chat panel visibility state.
- */
 function updateExpectedSize(width, height, win) {
     expectedWidth = width;
-    expectedBaseHeight = height + 40; // 40px for speech bubble space
+    expectedBaseHeight = height + 40;
     win.setSize(expectedWidth, getExpectedHeight());
 }
 //# sourceMappingURL=petWindow.js.map

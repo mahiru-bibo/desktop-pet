@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "com.desktop-pet.app",
-    "productName": "Desktop Pet",
+    "productName": "",
     "directories": {
       "output": "release"
     },
