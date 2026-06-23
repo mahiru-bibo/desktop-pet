@@ -55,4 +55,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback();
     });
   },
+
+  // TTS toggle from tray menu
+  onToggleTTS: (callback: (enabled: boolean) => void) => {
+    ipcRenderer.on('pet:toggle-tts', (_event, enabled: boolean) => {
+      callback(enabled);
+    });
+  },
 });

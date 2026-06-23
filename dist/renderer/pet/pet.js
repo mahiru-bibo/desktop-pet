@@ -7,8 +7,10 @@
   // Parse emotion tag from text. Format: [emotion] rest of text
   function parseEmotion(text) {
     var match = text.match(/^\[([^\]]+)\]\s*/);
-    if (match) return { emotion: match[1], cleanText: text.slice(match[0].length) };
-    return { emotion: null, cleanText: text };
+    var emotion = match ? match[1] : null;
+    // Strip ALL [xxx] tags from clean text so TTS doesn't read them aloud
+    var cleanText = text.replace(/\[[^\]]+\]\s*/g, '').trim();
+    return { emotion: emotion, cleanText: cleanText };
   }
 
   // Chat bar
@@ -52,11 +54,15 @@
     bubble=new SpeechBubble(bd);
     bubble.mount(container);
 
+    // TTS voice module (GPT-SoVITS sakura voice via local API)
+    var tts = new TTS();
+
     window.electronAPI.onSpeak(function(t){
       var parsed = parseEmotion(t);
       if (parsed.emotion) renderer.setEmotion(parsed.emotion);
       animCtrl.setState('talk');
       bubble.show(parsed.cleanText);
+      tts.speak(parsed.cleanText, parsed.emotion);
       bubble.onHide = function() {
         renderer.setEmotion('');
         if (animCtrl.currentState === 'talk') animCtrl.setState('idle');
@@ -78,6 +84,13 @@
     // ── Tray toggle ──
     if (window.electronAPI.onToggleChatFromTray) {
       window.electronAPI.onToggleChatFromTray(function(){ toggleChatBar(); });
+    }
+
+    // TTS toggle from tray menu
+    if (window.electronAPI.onToggleTTS) {
+      window.electronAPI.onToggleTTS(function(enabled) {
+        tts.setEnabled(enabled);
+      });
     }
 
     // ── Send message ──

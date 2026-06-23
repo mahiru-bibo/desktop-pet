@@ -28,6 +28,7 @@ export interface StoreSchema {
   petPosition: { x: number; y: number };
   pixelScale: number;
   bubbleDuration: number;
+  ttsEnabled: boolean;
 }
 
 const defaults: StoreSchema = {
@@ -84,6 +85,7 @@ const defaults: StoreSchema = {
   petPosition: { x: 200, y: 200 },
   pixelScale: 8,
   bubbleDuration: 8000,
+  ttsEnabled: true,
 };
 
 class JsonStore {

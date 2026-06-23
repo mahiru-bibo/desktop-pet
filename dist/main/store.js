@@ -93,6 +93,7 @@ const defaults = {
     petPosition: { x: 200, y: 200 },
     pixelScale: 8,
     bubbleDuration: 8000,
+    ttsEnabled: true,
 };
 class JsonStore {
     data;

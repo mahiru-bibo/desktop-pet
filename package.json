@@ -5,7 +5,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "build": "tsc && npm run copy-assets && npm run patch-pixelmaps",
-    "copy-assets": "node -e \"var fs=require('fs'),p=require('path');['pet','chat'].forEach(function(d){['index.html'].forEach(function(f){var s=p.join('src/renderer',d,f),t=p.join('dist/renderer',d,f);if(fs.existsSync(s))fs.copyFileSync(s,t)})});\" && echo Assets copied",
+    "copy-assets": "node -e \"var fs=require('fs'),p=require('path');['pet','chat'].forEach(function(d){['index.html','tts.js'].forEach(function(f){var s=p.join('src/renderer',d,f),t=p.join('dist/renderer',d,f);if(fs.existsSync(s))fs.copyFileSync(s,t)})});\" && echo Assets copied",
     "patch-pixelmaps": "node -e \"var fs=require('fs');fs.copyFileSync('assets/pixelMaps.browser.js','dist/renderer/shared/pixelMaps.js');\" && echo pixelMaps patched",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder"

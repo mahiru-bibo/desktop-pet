@@ -43,7 +43,16 @@
     bubble=new SpeechBubble(bd);
     bubble.mount(container);
 
-    window.electronAPI.onSpeak(function(t){animCtrl.setState('talk');bubble.show(t);});
+    var tts = new TTS();
+
+    window.electronAPI.onSpeak(function(t){
+      // Strip emotion tag if present
+      var m = t.match(/^\[([^\]]+)\]\s*/);
+      var clean = m ? t.slice(m[0].length) : t;
+      animCtrl.setState('talk');
+      bubble.show(t);
+      tts.speak(clean);
+    });
     window.electronAPI.onSetAnimation(function(s){animCtrl.setState(s);});
 
     // ── Drag ──
@@ -59,6 +68,12 @@
     // Tray toggle
     if (window.electronAPI.onToggleChatFromTray) {
       window.electronAPI.onToggleChatFromTray(function(){ toggleChatBar(); });
+    }
+
+    if (window.electronAPI.onToggleTTS) {
+      window.electronAPI.onToggleTTS(function(enabled) {
+        tts.setEnabled(enabled);
+      });
     }
 
     // ── Send message ──
